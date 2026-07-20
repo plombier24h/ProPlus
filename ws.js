@@ -57,7 +57,7 @@
             });
 
             if (panier.length > 0) {
-                window.location.href = 'https://metaplik.github.io/FACTURATION-/facture/?data=' + encodeURIComponent(JSON.stringify(panier)) + '&adr=' + encodeURIComponent(localStorage.getItem('artisan-adresse-postale') || '');
+                window.location.href = 'https://plombier24h.github.io/ProPlus/facture/?data=' + encodeURIComponent(JSON.stringify(panier)) + '&adr=' + encodeURIComponent(localStorage.getItem('artisan-adresse-postale') || '');
             } else {
                 alert('Panier vide.');
             }
@@ -138,7 +138,7 @@
                 const panier = extrairePanierLM();
 
                 if (panier.length > 0) {
-                    window.location.href = 'https://metaplik.github.io/FACTURATION-/facture/?data=' + encodeURIComponent(JSON.stringify(panier)) + '&adr=' + encodeURIComponent(localStorage.getItem('artisan-adresse-postale') || '');
+                    window.location.href = 'https://plombier24h.github.io/ProPlus/facture/?data=' + encodeURIComponent(JSON.stringify(panier)) + '&adr=' + encodeURIComponent(localStorage.getItem('artisan-adresse-postale') || '');
                 } else {
                     const candidats = document.querySelectorAll('[data-testid]');
                     const echantillon = Array.from(candidats).slice(0, 15).map(el => el.getAttribute('data-testid')).join('\n');

@@ -350,10 +350,10 @@ function construireLienEtCorps(r) {
     let lien = '';
     let texte = '';
     if (r.type === 'DEVIS' && docIdCourant) {
-        lien = 'https://metaplik.github.io/FACTURATION-/facture/?docId=' + docIdCourant + '&signature=1';
+        lien = (window.location.origin + window.location.pathname) + '?docId=' + docIdCourant + '&signature=1';
         texte = "Bonjour,\n\nVeuillez trouver votre devis via ce lien. Vous pouvez le consulter et le signer directement en ligne :\n" + lien + "\n\nCordialement.";
     } else if (docIdCourant) {
-        lien = 'https://metaplik.github.io/FACTURATION-/facture/?docId=' + docIdCourant + '&voir=1';
+        lien = (window.location.origin + window.location.pathname) + '?docId=' + docIdCourant + '&voir=1';
         texte = "Bonjour,\n\nVeuillez trouver votre facture via ce lien. Vous pouvez la consulter et la télécharger directement en ligne :\n" + lien + "\n\nCordialement.";
     } else {
         texte = "Bonjour,\n\nVeuillez trouver ci-joint votre document.\n\nCordialement.";
@@ -709,6 +709,7 @@ function chargerDocumentDepuisFirestore(docId, modeSignature, modeVoir) {
 function activerModeConsultationClient() {
     document.querySelectorAll('input, textarea, select, .upload-btn').forEach(function(el) { el.disabled = true; });
     document.querySelector('.btns-fixed').style.display = 'none';
+    document.querySelectorAll('.btn-add, .toggle-doc').forEach(function(el) { el.style.display = 'none'; });
 
     const btnTelecharger = document.createElement('button');
     btnTelecharger.innerText = 'Télécharger';
@@ -734,6 +735,7 @@ let padSignatureEnCours = false;
 function activerModeSignatureClient() {
     document.querySelectorAll('input, textarea, select, .upload-btn').forEach(function(el) { el.disabled = true; });
     document.querySelector('.btns-fixed').style.display = 'none';
+    document.querySelectorAll('.btn-add, .toggle-doc').forEach(function(el) { el.style.display = 'none'; });
     document.getElementById('bloc-pad-signature').style.display = 'block';
 
     const canvas = document.getElementById('pad-signature');

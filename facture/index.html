@@ -819,6 +819,15 @@ calc();
 appliquerDate();
 
 (function() {
+    const dg = document.getElementById('dateGlobale');
+    if (dg && !dg.value) {
+        const auj = new Date();
+        dg.value = auj.getFullYear() + '-' + String(auj.getMonth() + 1).padStart(2, '0') + '-' + String(auj.getDate()).padStart(2, '0');
+        appliquerDate();
+    }
+})();
+
+(function() {
 chargerProfilEntreprise();
 
 const params = new URLSearchParams(window.location.search);

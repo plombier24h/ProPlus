@@ -503,17 +503,9 @@
         localStorage.setItem('clientTel', tel);
         localStorage.setItem('clientEmail', email);
 
-        // Ajout / mise à jour dans la liste des clients enregistrés
+        // Ajout / mise à jour dans la liste des clients enregistrés (Firestore = source de vérité, synchronisée sur tous les appareils)
         if (nom) {
-            let liste = chargerListeClients();
-            const index = liste.findIndex(c => c.nom.toLowerCase() === nom.toLowerCase());
-            const fiche = { nom, adresse, tel, email };
-            if (index >= 0) {
-                liste[index] = fiche;
-            } else {
-                liste.push(fiche);
-            }
-            localStorage.setItem('clients_liste', JSON.stringify(liste));
+            enregistrerClientFirestore({ nom, adresse, tel, email });
         }
 
         const btn = document.getElementById('btn-client');
@@ -522,7 +514,58 @@
         setTimeout(() => { btn.textContent = original; }, 2500);
     }
 
+    // ===================== CLIENTS : SYNCHRONISATION FIRESTORE =====================
+    let clientsCache = [];
+    let clientsListenerActif = false;
+
+    function demarrerEcouteClients(uid) {
+        if (clientsListenerActif) return;
+        clientsListenerActif = true;
+        firebase.firestore().collection('clients').where('proUid', '==', uid).onSnapshot(function(snapshot) {
+            clientsCache = snapshot.docs.map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); });
+            localStorage.setItem('clients_liste', JSON.stringify(clientsCache));
+            const rechercheEl = document.getElementById('clientele-search');
+            if (document.getElementById('clientele-liste')) {
+                filtrerClientele(rechercheEl ? rechercheEl.value : '');
+            }
+        }, function(err) {
+            console.error('Erreur de synchronisation des clients :', err);
+        });
+    }
+
+    function migrerClientsLocalVersFirestore(uid) {
+        try {
+            const brut = localStorage.getItem('clients_liste');
+            const locaux = brut ? JSON.parse(brut) : [];
+            if (!Array.isArray(locaux) || locaux.length === 0) return;
+            const col = firebase.firestore().collection('clients');
+            col.where('proUid', '==', uid).get().then(function(snapshot) {
+                const nomsExistants = snapshot.docs.map(function(d) { return (d.data().nom || '').trim().toLowerCase(); });
+                locaux.forEach(function(c) {
+                    if (c && c.nom && nomsExistants.indexOf(c.nom.trim().toLowerCase()) === -1) {
+                        col.add(Object.assign({}, c, { proUid: uid, creeLe: firebase.firestore.FieldValue.serverTimestamp() })).catch(function() {});
+                    }
+                });
+            });
+        } catch (e) {}
+    }
+
+    function enregistrerClientFirestore(fiche) {
+        const user = firebase.auth().currentUser;
+        if (!user) return;
+        const liste = chargerListeClients();
+        const existant = liste.find(function(c) { return (c.nom || '').trim().toLowerCase() === fiche.nom.trim().toLowerCase(); });
+        const col = firebase.firestore().collection('clients');
+        if (existant && existant.id) {
+            col.doc(existant.id).update(fiche).catch(function(err) { console.error('Erreur mise à jour client :', err); });
+        } else {
+            col.add(Object.assign({}, fiche, { proUid: user.uid, creeLe: firebase.firestore.FieldValue.serverTimestamp() }))
+                .catch(function(err) { console.error('Erreur ajout client :', err); });
+        }
+    }
+
     function chargerListeClients() {
+        if (clientsCache && clientsCache.length) return clientsCache;
         try {
             const brut = localStorage.getItem('clients_liste');
             const liste = brut ? JSON.parse(brut) : [];
@@ -687,7 +730,7 @@
     }
 
     function ouvrirFacture() {
-        window.open('https://metaplik.github.io/FACTURATION-/facture/', '_blank');
+        window.open('facture/', '_blank');
     }
 
     // ===================== STATISTIQUES =====================
@@ -1060,31 +1103,46 @@
     }
 
     function renommerClientClientele(i) {
-        const clients = chargerListeClients();
         const client = window.clienteleFiltres[i];
-        const index = clients.findIndex(function(c) { return c.nom === client.nom; });
-        if (index === -1) return;
+        if (!client) return;
         const nouveauNom = prompt('Nouveau nom du client :', client.nom);
         if (!nouveauNom || !nouveauNom.trim() || nouveauNom.trim() === client.nom) return;
-        const ancienNom = clients[index].nom;
-        clients[index].nom = nouveauNom.trim();
-        localStorage.setItem('clients_liste', JSON.stringify(clients));
+        const ancienNom = client.nom;
+        const nomFinal = nouveauNom.trim();
 
-        // Les notes rattachées suivent le renommage (mêmes données, juste sur cet appareil)
-        const notes = chargerNotes();
-        notes.forEach(function(n) { if (n.clientNom === ancienNom) n.clientNom = nouveauNom.trim(); });
-        sauvegarderListeNotes(notes);
+        const terminerRenommage = function() {
+            const notes = chargerNotes();
+            notes.forEach(function(n) { if (n.clientNom === ancienNom) n.clientNom = nomFinal; });
+            sauvegarderListeNotes(notes);
 
-        alert('Client renommé. Attention : les devis/factures déjà enregistrés sur Firestore gardent l\'ancien nom "' + ancienNom + '" et ne seront plus rattachés automatiquement à ce client.');
-        filtrerClientele(document.getElementById('clientele-search').value);
+            alert('Client renommé. Attention : les devis/factures déjà enregistrés sur Firestore gardent l\'ancien nom "' + ancienNom + '" et ne seront plus rattachés automatiquement à ce client.');
+            filtrerClientele(document.getElementById('clientele-search').value);
+        };
+
+        if (client.id) {
+            firebase.firestore().collection('clients').doc(client.id).update({ nom: nomFinal })
+                .then(terminerRenommage)
+                .catch(function(err) { alert('Erreur lors du renommage : ' + err.message); });
+        } else {
+            const clients = chargerListeClients();
+            const index = clients.findIndex(function(c) { return c.nom === ancienNom; });
+            if (index !== -1) { clients[index].nom = nomFinal; localStorage.setItem('clients_liste', JSON.stringify(clients)); }
+            terminerRenommage();
+        }
     }
 
     function supprimerClientClientele(i) {
         const client = window.clienteleFiltres[i];
+        if (!client) return;
         if (!confirm('Supprimer définitivement le client "' + client.nom + '" de PRO+ ? Cette action ne supprime pas ses devis/factures déjà enregistrés.')) return;
-        const clients = chargerListeClients().filter(function(c) { return c.nom !== client.nom; });
-        localStorage.setItem('clients_liste', JSON.stringify(clients));
-        filtrerClientele(document.getElementById('clientele-search').value);
+        if (client.id) {
+            firebase.firestore().collection('clients').doc(client.id).delete()
+                .catch(function(err) { alert('Erreur lors de la suppression : ' + err.message); });
+        } else {
+            const clients = chargerListeClients().filter(function(c) { return c.nom !== client.nom; });
+            localStorage.setItem('clients_liste', JSON.stringify(clients));
+            filtrerClientele(document.getElementById('clientele-search').value);
+        }
     }
     function toggleFicheClientele(i) {
         const fiche = document.getElementById('fiche-clientele-' + i);
@@ -1180,7 +1238,7 @@
     }
 
     function ouvrirDocumentFacture(docId) {
-        window.open('https://metaplik.github.io/FACTURATION-/facture/?docId=' + docId, '_blank');
+        window.open('facture/?docId=' + docId, '_blank');
     }
 
     // ===================== MENU HAMBURGER =====================
@@ -1294,6 +1352,8 @@
         if (user) {
             overlay.style.display = 'none';
             app.style.display = 'block';
+            demarrerEcouteClients(user.uid);
+            migrerClientsLocalVersFirestore(user.uid);
         } else {
             overlay.style.display = 'block';
             app.style.display = 'none';

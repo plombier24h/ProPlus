@@ -4,8 +4,19 @@
 <head>
 <meta charset="UTF-8">
 <title>Facture</title>
-<style>
+<script>
+(function() {
+    var p = new URLSearchParams(location.search);
+    if (p.get('docId') && (p.get('signature') === '1' || p.get('voir') === '1')) {
+        document.documentElement.classList.add('mode-client-attente');
+    }
+})();
+</script>
+<style><style>
 * { box-sizing: border-box; }
+html.mode-client-attente .btns-fixed,
+html.mode-client-attente .btn-add,
+html.mode-client-attente .toggle-doc { display: none !important; }
 body { font-family: Arial, sans-serif; max-width: 900px; margin: auto; padding: 10px 10px 140px; }
 .upload-btn { margin-bottom: 10px; }
 .top { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }

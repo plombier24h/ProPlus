@@ -17,7 +17,8 @@
 html.mode-client-attente .btns-fixed,
 html.mode-client-attente .btn-add,
 html.mode-client-attente .toggle-doc,
-html.mode-client-attente .upload-btn { display: none !important; }
+html.mode-client-attente .upload-btn,
+html.mode-client-attente .btn-suppr-ligne { display: none !important; }
 body { font-family: Arial, sans-serif; max-width: 900px; margin: auto; padding: 10px 10px 140px; }
 .upload-btn { margin-bottom: 10px; }
 .top { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
@@ -49,13 +50,14 @@ body { font-family: Arial, sans-serif; max-width: 900px; margin: auto; padding: 
 table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
 th { background: #FEF3C7; font-size: 13px; }
 td, th { border: 1px solid #ccc; padding: 5px; text-align: center; vertical-align: top; }
-td:nth-child(1), th:nth-child(1) { width: 36%; text-align: left; }
+td:nth-child(1), th:nth-child(1) { width: 32%; text-align: left; }
 td:nth-child(2), th:nth-child(2) { width: 13%; }
 td:nth-child(3), th:nth-child(3) { width: 6%; }
 td:nth-child(4), th:nth-child(4) { width: 7%; }
 td:nth-child(5), th:nth-child(5) { width: 11%; }
 td:nth-child(6), th:nth-child(6) { width: 8%; }
 td:nth-child(7), th:nth-child(7) { width: 19%; }
+td:nth-child(8), th:nth-child(8) { width: 4%; text-align: center; }
 td input, td textarea { width: 100%; border: none; background: transparent; font-size: 13px; font-family: Arial; resize: none; overflow: hidden; padding: 0; }
 td input:focus, td textarea:focus { outline: none; }
 .desc-ta { min-height: 24px; line-height: 1.4; display: block; }
@@ -82,6 +84,7 @@ hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
 @media print {
     @page { size: A4 portrait; margin: 15mm; }
     .btns-fixed, .upload-btn, .btn-add, .toggle-doc { display: none !important; }
+    td:nth-child(8), th:nth-child(8) { display: none !important; }
     body { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
     input, textarea { border-bottom: none !important; }
     #dateGlobale { border: none !important; background: transparent !important; display: none !important; }
@@ -152,6 +155,7 @@ hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
 <th>Prix</th>
 <th>TVA %</th>
 <th>Montant</th>
+<th></th>
 </tr>
 <tr>
 <td><textarea class="desc-ta auto-ta" placeholder="Description prestation" oninput="grow(this); calc()"></textarea></td>
@@ -161,6 +165,7 @@ hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
 <td><input type="number" value="0" oninput="calc()"></td>
 <td><input type="number" value="20" oninput="calc()"></td>
 <td class="montant">0,00 €</td>
+<td style="text-align:center;"><button type="button" class="btn-suppr-ligne" onclick="supprimerLigne(this)" title="Supprimer cette ligne" style="background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;padding:0 4px;">✕</button></td>
 </tr>
 </table>
 
@@ -299,9 +304,15 @@ tr.innerHTML = `
 <td><input type="number" value="0" oninput="calc()"></td>
 <td><input type="number" value="20" oninput="calc()"></td>
 <td class="montant">0,00 €</td>
+<td style="text-align:center;"><button type="button" class="btn-suppr-ligne" onclick="supprimerLigne(this)" title="Supprimer cette ligne" style="background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;padding:0 4px;">✕</button></td>
 `;
 table.appendChild(tr);
 appliquerDate();
+}
+
+function supprimerLigne(btn) {
+const row = btn.closest('tr');
+if (row) { row.remove(); calc(); }
 }
 
 function fmt(n) {
@@ -698,7 +709,8 @@ function chargerDocumentDepuisFirestore(docId, modeSignature, modeVoir) {
 <td><input value="${l.unite || 'h'}"></td>
 <td><input type="number" value="${l.prix || 0}" oninput="calc()"></td>
 <td><input type="number" value="${l.tva || 20}" oninput="calc()"></td>
-<td class="montant">0,00 €</td>`;
+<td class="montant">0,00 €</td>
+<td style="text-align:center;"><button type="button" class="btn-suppr-ligne" onclick="supprimerLigne(this)" title="Supprimer cette ligne" style="background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;padding:0 4px;">✕</button></td>`;
                 table.appendChild(tr);
             });
         }
@@ -727,7 +739,7 @@ function chargerDocumentDepuisFirestore(docId, modeSignature, modeVoir) {
 function activerModeConsultationClient() {
     document.querySelectorAll('input, textarea, select, .upload-btn').forEach(function(el) { el.disabled = true; });
     document.querySelector('.btns-fixed').style.display = 'none';
-    document.querySelectorAll('.btn-add, .toggle-doc').forEach(function(el) { el.style.display = 'none'; });
+    document.querySelectorAll('.btn-add, .toggle-doc, .btn-suppr-ligne').forEach(function(el) { el.style.display = 'none'; });
 
     const btnTelecharger = document.createElement('button');
     btnTelecharger.innerText = 'Télécharger';
@@ -753,7 +765,7 @@ let padSignatureEnCours = false;
 function activerModeSignatureClient() {
     document.querySelectorAll('input, textarea, select, .upload-btn').forEach(function(el) { el.disabled = true; });
     document.querySelector('.btns-fixed').style.display = 'none';
-    document.querySelectorAll('.btn-add, .toggle-doc').forEach(function(el) { el.style.display = 'none'; });
+    document.querySelectorAll('.btn-add, .toggle-doc, .btn-suppr-ligne').forEach(function(el) { el.style.display = 'none'; });
     document.getElementById('bloc-pad-signature').style.display = 'flex';
 
     const canvas = document.getElementById('pad-signature');
@@ -871,7 +883,8 @@ tr.innerHTML = `
 <td><input value="u"></td>
 <td><input type="number" value="${art.px || 0}" oninput="calc()"></td>
 <td><input type="number" value="20" oninput="calc()"></td>
-<td class="montant">0,00 €</td>`;
+<td class="montant">0,00 €</td>
+<td style="text-align:center;"><button type="button" class="btn-suppr-ligne" onclick="supprimerLigne(this)" title="Supprimer cette ligne" style="background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;padding:0 4px;">✕</button></td>`;
 table.appendChild(tr);
 });
 

@@ -756,10 +756,13 @@
     function chargerStatistiques() {
         const conteneur = document.getElementById('stats-contenu');
         conteneur.innerHTML = 'Chargement...';
+        const uidStats = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
         firebase.firestore().collection('documents').get().then(function(snapshot) {
             statsDocs = [];
             snapshot.forEach(function(doc) {
-                statsDocs.push(Object.assign({ id: doc.id }, doc.data()));
+                const dStats = doc.data();
+                if (dStats.proUid && dStats.proUid !== uidStats) return;
+                statsDocs.push(Object.assign({ id: doc.id }, dStats));
             });
             statsCarteOuverte = null;
             rendreStatistiques();
@@ -1166,12 +1169,17 @@
     function chargerDocumentsClient(nomClient, i) {
         const zoneDocs = document.getElementById('fiche-clientele-docs-' + i);
         const zoneResume = document.getElementById('fiche-clientele-resume-' + i);
+        const uidClient = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null;
         firebase.firestore().collection('documents')
             .where('clientNom', '==', nomClient)
             .orderBy('creeLe', 'desc')
             .get()
             .then(function(snapshot) {
-                if (snapshot.empty) {
+                const docsFiltres = snapshot.docs.filter(function(doc) {
+                    const d = doc.data();
+                    return !d.proUid || d.proUid === uidClient;
+                });
+                if (docsFiltres.length === 0) {
                     zoneDocs.innerHTML = 'Aucun document enregistré.';
                     zoneDocs.style.display = 'block';
                     zoneResume.innerHTML = '';
@@ -1180,7 +1188,7 @@
                 zoneDocs.style.display = 'grid';
 
                 const compte = { 'payée': 0, 'en attente': 0, 'acompte': 0, 'devis accepté': 0, 'devis refusé': 0 };
-                snapshot.forEach(function(doc) {
+                docsFiltres.forEach(function(doc) {
                     const s = doc.data().statut;
                     if (compte[s] !== undefined) compte[s]++;
                 });
@@ -1189,7 +1197,7 @@
                     ' · Devis refusés : ' + compte['devis refusé'];
 
                 let html = '';
-                snapshot.forEach(function(doc) {
+                docsFiltres.forEach(function(doc) {
                     const d = doc.data();
                     const couleurFond = d.type === 'DEVIS' ? '#DBEAFE' : '#FEE2E2';
                     const couleurTexte = d.type === 'DEVIS' ? '#1D4ED8' : '#B91C1C';

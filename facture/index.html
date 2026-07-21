@@ -257,6 +257,9 @@ forfaitaire de 40 € pour frais de recouvrement.</textarea>
         authPret = true;
         utilisateurActuel = user;
         debloquerBoutonEnregistrer(!!user);
+        if (!user && document.documentElement.classList.contains('mode-client-attente')) {
+            firebase.auth().signInAnonymously().catch(function() {});
+        }
     });
 
     // Filet de sécurité : si Firebase ne répond jamais en 5 secondes,

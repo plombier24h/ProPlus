@@ -574,6 +574,7 @@ function sauvegarderDocument() {
         if (!numero || numero.indexOf('Aperçu') === 0) { reject(new Error("Le numéro n'est pas encore prêt, patientez une seconde puis réessayez.")); return; }
 
         const donnees = {
+            proUid: utilisateurActuel.uid,
             type: type,
             numero: numero,
             clientNom: nomClient,

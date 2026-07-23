@@ -192,7 +192,7 @@ TVA : <span id="tva">0,00</span> €<br>
 IBAN : <input id="ibanEntreprise" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" style="margin-bottom:4px;"><br>
 BIC : <input id="bicEntreprise" placeholder="XXXXXXXX"><br><br>
 <b>Mentions légales :</b><br>
-<textarea class="legal-mention" id="mentionLegale" rows="3">Article L441-10 du Code de commerce : tout retard de
+<textarea class="legal-mention" id="mentionLegale" rows="3" oninput="grow(this)">Article L441-10 du Code de commerce : tout retard de
 paiement entraîne une pénalité, ainsi qu'une indemnité
 forfaitaire de 40 € pour frais de recouvrement.</textarea>
 </div>
@@ -680,7 +680,7 @@ function chargerDocumentDepuisFirestore(docId, modeSignature, modeVoir) {
         if (d.entrepriseSirene) document.getElementById('sireneEntreprise').value = d.entrepriseSirene;
         if (d.entrepriseTva) document.getElementById('tvaEntreprise').value = d.entrepriseTva;
         if (d.entrepriseTelephone) document.getElementById('telEntreprise').value = d.entrepriseTelephone;
-        if (d.entrepriseEmail) document.getElementById('emailEntreprise').value = d.entrepriseEmail;
+        if (d.entrepriseEmail) { const elEmail = document.getElementById('emailEntreprise'); elEmail.value = d.entrepriseEmail; grow(elEmail); }
         if (d.entrepriseIban) document.getElementById('ibanEntreprise').value = d.entrepriseIban;
         if (d.entrepriseBic) document.getElementById('bicEntreprise').value = d.entrepriseBic;
         document.getElementById('titreDocument').value = d.type || 'FACTURE';
@@ -689,7 +689,7 @@ function chargerDocumentDepuisFirestore(docId, modeSignature, modeVoir) {
         document.getElementById('dateFacture').value = d.date || '';
         document.getElementById('validiteDevis').value = d.validiteDevis || '';
         document.getElementById('conditionsPaiement').value = d.conditionsPaiement || document.getElementById('conditionsPaiement').value;
-        document.getElementById('mentionLegale').value = d.mentionLegale || document.getElementById('mentionLegale').value;
+        const elMention = document.getElementById('mentionLegale'); elMention.value = d.mentionLegale || elMention.value; grow(elMention);
 
         const clientTa = document.querySelectorAll('.client-box .auto-ta');
         const clientInputs = document.querySelectorAll('.client-box input');
@@ -713,6 +713,7 @@ function chargerDocumentDepuisFirestore(docId, modeSignature, modeVoir) {
 <td class="montant">0,00 €</td>
 <td style="text-align:center;"><button type="button" class="btn-suppr-ligne" onclick="supprimerLigne(this)" title="Supprimer cette ligne" style="background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;padding:0 4px;">✕</button></td>`;
                 table.appendChild(tr);
+                grow(tr.querySelector('.desc-ta'));
             });
         }
         appliquerDate();
@@ -887,6 +888,7 @@ tr.innerHTML = `
 <td class="montant">0,00 €</td>
 <td style="text-align:center;"><button type="button" class="btn-suppr-ligne" onclick="supprimerLigne(this)" title="Supprimer cette ligne" style="background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;padding:0 4px;">✕</button></td>`;
 table.appendChild(tr);
+grow(tr.querySelector('.desc-ta'));
 });
 
 appliquerDate();
